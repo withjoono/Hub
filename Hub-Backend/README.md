@@ -127,3 +127,4 @@ docker compose version
 ```
 
 5. Ec2 생성 시 .pem파일 교체 및 깃허브 secrets(SERVER_SSH_KEY) 파일내용으로 수정
+# Updated
