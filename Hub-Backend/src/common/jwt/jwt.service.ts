@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as jwt from 'jsonwebtoken';
 import { AllConfigType } from 'src/config/config.type';
+import { PermissionsPayload } from 'src/auth/types/jwt-payload.type';
 
 @Injectable()
 export class JwtService {
@@ -30,11 +31,22 @@ export class JwtService {
     return Buffer.from(secretKey, 'base64'); // 스프링에서는 시크릿키를 base64 인코딩처리를 하여 사용하기 때문에 맞춰줘야함
   }
 
-  createAccessToken(memberId: number): string {
-    const payload = {
+  /**
+   * Access Token 생성
+   * @param memberId 사용자 ID
+   * @param permissions 앱별 권한 정보 (선택적)
+   */
+  createAccessToken(memberId: number, permissions?: PermissionsPayload): string {
+    const payload: Record<string, any> = {
       sub: 'ATK',
       jti: memberId,
     };
+
+    // permissions가 제공되면 토큰에 포함
+    if (permissions && Object.keys(permissions).length > 0) {
+      payload.permissions = permissions;
+    }
+
     return jwt.sign(payload, this.getSigningKey(this.SECRET_KEY), {
       expiresIn: this.TOKEN_VALIDATION_MS / 1000,
       algorithm: this.HASH_ALGORITHM,

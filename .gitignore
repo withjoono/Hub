@@ -56,6 +56,7 @@ nul
 token.json
 firebase-service-account-key.json
 gcs-service-account-key.json
+SECRETS_VALUES_REFERENCE.md
 
 # Uploads
 uploads/

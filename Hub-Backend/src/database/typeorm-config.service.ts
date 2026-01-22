@@ -63,6 +63,7 @@ import {
 } from './entities/myclass';
 import { OAuthClientEntity } from './entities/oauth/oauth-client.entity';
 import { OAuthAuthorizationCodeEntity } from './entities/oauth/oauth-authorization-code.entity';
+import { AppEntity, AppSubscriptionEntity, ProductPermissionMappingEntity } from './entities/subscription';
 
 @Injectable()
 export class TypeOrmConfigService implements TypeOrmOptionsFactory {
@@ -189,6 +190,11 @@ export class TypeOrmConfigService implements TypeOrmOptionsFactory {
         // OAuth 2.0 관련
         OAuthClientEntity, // OAuth 클라이언트 등록
         OAuthAuthorizationCodeEntity, // OAuth Authorization Code
+
+        // 앱 구독/권한 관련
+        AppEntity, // 앱 정의 (examhub, susi 등)
+        AppSubscriptionEntity, // 사용자별 앱 구독 정보
+        ProductPermissionMappingEntity, // 상품-권한 매핑 (관리자가 동적 관리)
       ],
     } as TypeOrmModuleOptions;
   }

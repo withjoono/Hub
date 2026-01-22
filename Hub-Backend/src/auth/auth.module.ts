@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { AuthController } from './auth.controller';
 import { JwtModule } from 'src/common/jwt/jwt.module';
@@ -11,6 +11,7 @@ import { SmsModule } from 'src/modules/sms/sms.module';
 import { MentoringModule } from 'src/modules/mentoring/mentoring.module';
 import { LoginAttemptService } from './services/login-attempt.service';
 import { CookieService } from './services/cookie.service';
+import { SubscriptionModule } from 'src/modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -21,6 +22,7 @@ import { CookieService } from './services/cookie.service';
     HttpModule,
     SmsModule,
     MentoringModule,
+    forwardRef(() => SubscriptionModule), // 앱별 권한 정보를 JWT에 포함하기 위해
   ],
   providers: [AuthService, JwtStrategy, LoginAttemptService, CookieService],
   controllers: [AuthController],

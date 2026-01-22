@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
   UnauthorizedException,
+  Optional,
 } from '@nestjs/common';
 import { CACHE_MANAGER } from '@nestjs/cache-manager';
 import { Cache } from 'cache-manager';
@@ -28,6 +29,8 @@ import { SmsService } from 'src/modules/sms/sms.service';
 import { MentoringService } from 'src/modules/mentoring/mentoring.service';
 import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
+import { SubscriptionService } from 'src/modules/subscription/subscription.service';
+import { PermissionsPayload } from './types/jwt-payload.type';
 
 // 토큰 블랙리스트 캐시 키 접두사
 const TOKEN_BLACKLIST_PREFIX = 'token_blacklist:';
@@ -44,7 +47,36 @@ export class AuthService {
     private readonly mentoringService: MentoringService,
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
+    @Optional() private readonly subscriptionService?: SubscriptionService,
   ) {}
+
+  /**
+   * 사용자의 앱별 권한 정보를 가져옵니다.
+   * SubscriptionService가 없으면 빈 객체 반환
+   */
+  private async getMemberPermissions(memberId: number): Promise<PermissionsPayload | undefined> {
+    if (!this.subscriptionService) {
+      return undefined;
+    }
+    try {
+      const permissions = await this.subscriptionService.getMemberPermissions(memberId);
+      // PermissionsDto를 PermissionsPayload로 변환
+      const payload: PermissionsPayload = {};
+      for (const [appId, permission] of Object.entries(permissions)) {
+        if (permission) {
+          payload[appId] = {
+            plan: permission.plan,
+            expires: permission.expires,
+            features: permission.features,
+          };
+        }
+      }
+      return Object.keys(payload).length > 0 ? payload : undefined;
+    } catch (error) {
+      this.logger.warn(`[권한 조회 실패] memberId=${memberId}: ${error.message}`);
+      return undefined;
+    }
+  }
   // 이메일 로그인
   async validateLogin(dto: loginWithEmailDto): Promise<LoginResponseType> {
     const member = await this.membersService.findOneByEmail(dto.email);
@@ -62,7 +94,11 @@ export class AuthService {
     if (!isValidPassword) {
       throw new UnauthorizedException(STATUS_MESSAGES.MEMBER.PASSWORD_MISMATCH);
     }
-    const accessToken = this.jwtService.createAccessToken(member.id);
+
+    // 앱별 권한 정보 조회
+    const permissions = await this.getMemberPermissions(member.id);
+
+    const accessToken = this.jwtService.createAccessToken(member.id, permissions);
     const refreshToken = this.jwtService.createRefreshToken(member.id);
     const tokenExpiry = this.jwtService.getTokenExpiryTime();
     const activeServices = await this.membersService.findActiveServicesById(member.id);
@@ -109,7 +145,10 @@ export class AuthService {
       }
     }
 
-    const accessToken = this.jwtService.createAccessToken(member.id);
+    // 앱별 권한 정보 조회 (신규 가입이므로 기본값)
+    const permissions = await this.getMemberPermissions(member.id);
+
+    const accessToken = this.jwtService.createAccessToken(member.id, permissions);
     const refreshToken = this.jwtService.createRefreshToken(member.id);
     const tokenExpiry = this.jwtService.getTokenExpiryTime();
     const activeServices = await this.membersService.findActiveServicesById(member.id);
@@ -170,7 +209,10 @@ export class AuthService {
       }
     }
 
-    const accessToken = this.jwtService.createAccessToken(member.id);
+    // 앱별 권한 정보 조회 (신규 가입이므로 기본값)
+    const permissions = await this.getMemberPermissions(member.id);
+
+    const accessToken = this.jwtService.createAccessToken(member.id, permissions);
     const refreshToken = this.jwtService.createRefreshToken(member.id);
     const tokenExpiry = this.jwtService.getTokenExpiryTime();
     const activeServices = await this.membersService.findActiveServicesById(member.id);
@@ -208,7 +250,10 @@ export class AuthService {
       throw new NotFoundException('소셜 계정이 존재하지 않습니다. 회원가입을 진행해주세요!');
     }
 
-    const accessToken = this.jwtService.createAccessToken(member.id);
+    // 앱별 권한 정보 조회
+    const permissions = await this.getMemberPermissions(member.id);
+
+    const accessToken = this.jwtService.createAccessToken(member.id, permissions);
     const refreshToken = this.jwtService.createRefreshToken(member.id);
     const tokenExpiry = this.jwtService.getTokenExpiryTime();
     const activeServices = await this.membersService.findActiveServicesById(member.id);
@@ -239,7 +284,10 @@ export class AuthService {
         throw new NotFoundException(STATUS_MESSAGES.MEMBER.ACCOUNT_NOT_FOUND);
       }
 
-      const accessToken = this.jwtService.createAccessToken(member.id);
+      // 앱별 권한 정보 조회 (토큰 갱신 시에도 최신 권한 반영)
+      const permissions = await this.getMemberPermissions(member.id);
+
+      const accessToken = this.jwtService.createAccessToken(member.id, permissions);
       const refreshToken = this.jwtService.createRefreshToken(member.id);
       const tokenExpiry = this.jwtService.getTokenExpiryTime();
       const activeServices = await this.membersService.findActiveServicesById(member.id);

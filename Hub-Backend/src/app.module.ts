@@ -50,6 +50,7 @@ import { ChatbotModule } from './modules/chatbot/chatbot.module';
 import { winstonConfig } from './common/utils/winston.utils';
 import { WinstonModule } from 'nest-winston';
 import { OAuthModule } from './oauth/oauth.module';
+import { SubscriptionModule } from './modules/subscription/subscription.module';
 
 @Module({
   imports: [
@@ -130,6 +131,7 @@ import { OAuthModule } from './oauth/oauth.module';
     PlannerModule, // 플래너 모듈 (학습계획, 일정, 루틴)
     MyclassModule, // 마이클래스 모듈 (건강관리, 상담, 출결, 시험)
     ChatbotModule, // 챗봇 모듈 (FAQ, 용어사전, 매뉴얼 기반 Q&A)
+    SubscriptionModule, // 앱 구독/권한 관리 모듈 (JWT에 앱별 권한 포함)
   ],
   controllers: [AppController],
   providers: [

@@ -20,7 +20,6 @@ import { useLoginWithEmail } from "@/stores/server/features/auth/mutations";
 import { useQueryClient } from "@tanstack/react-query";
 import { meQueryKeys } from "@/stores/server/features/me/queries";
 import { USER_API } from "@/stores/server/features/me/apis";
-import { generateSSOUrl, isSSOService } from "@/lib/utils/sso-helper";
 
 interface Props {
   className?: string;
@@ -31,8 +30,8 @@ export function LoginFormSimple({ className }: Props) {
   const queryClient = useQueryClient();
   const loginWithEmail = useLoginWithEmail();
 
-  // URL에서 redirect_uri 파라미터 확인 (SSO 리디렉트용)
-  const redirectUri = new URLSearchParams(window.location.search).get('redirect_uri');
+  // URL에서 return_url 파라미터 확인 (OAuth 리디렉트용)
+  const returnUrl = new URLSearchParams(window.location.search).get('return_url');
 
   const form = useForm<z.infer<typeof loginFormSchema>>({
     resolver: zodResolver(loginFormSchema),
@@ -52,10 +51,9 @@ export function LoginFormSimple({ className }: Props) {
     if (result.success) {
       toast.success("환영합니다. 거북스쿨입니다. 😄");
 
-      // SSO 리디렉트: redirect_uri가 있고 SSO 서비스이면 토큰과 함께 외부로 리디렉트
-      if (redirectUri && isSSOService(redirectUri)) {
-        const ssoUrl = generateSSOUrl(redirectUri);
-        window.location.href = ssoUrl;
+      // OAuth return_url이 있으면 해당 URL로 리디렉트
+      if (returnUrl) {
+        window.location.href = returnUrl;
         return;
       }
 
