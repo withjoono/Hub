@@ -79,16 +79,31 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     CacheModule.registerAsync({
       isGlobal: true,
       useFactory: async () => {
-        const store = await redisStore({
-          socket: {
-            host: process.env.REDIS_HOST || 'localhost',
-            port: parseInt(process.env.REDIS_PORT || '6379', 10),
-          },
-          keyPrefix: 'hub-',
-          ttl: 300000, // 5분
-        });
-        console.log('✅ Hub: Redis 연결됨 (localhost:6379, prefix: hub-)');
-        return { store, ttl: 300000 };
+        const isProduction = process.env.NODE_ENV === 'production';
+        const redisHost = process.env.REDIS_HOST;
+
+        // Redis 설정이 없으면 메모리 캐시 사용 (Cloud Run에서는 Redis 없음)
+        if (isProduction && !redisHost) {
+          console.log('⚠️  Redis 미설정 - 메모리 캐시 사용 (Cloud Run)');
+          return { ttl: 300000 };
+        }
+
+        try {
+          const store = await redisStore({
+            socket: {
+              host: redisHost || 'localhost',
+              port: parseInt(process.env.REDIS_PORT || '6379', 10),
+              connectTimeout: 5000, // 5초 타임아웃
+            },
+            keyPrefix: 'hub-',
+            ttl: 300000, // 5분
+          });
+          console.log(`✅ Redis 연결 성공 (${redisHost || 'localhost'}:${process.env.REDIS_PORT || '6379'})`);
+          return { store, ttl: 300000 };
+        } catch (error) {
+          console.warn('⚠️  Redis 연결 실패 - 메모리 캐시로 폴백:', error.message);
+          return { ttl: 300000 };
+        }
       },
     }),
     // Rate Limiting - DDoS/브루트포스 공격 방지
