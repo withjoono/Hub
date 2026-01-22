@@ -39,13 +39,17 @@ export default registerAs<DatabaseConfig>('database', () => {
     try {
       const databaseUrl = process.env.DATABASE_URL;
 
+      // DATABASE_URL 형식 로깅 (비밀번호 마스킹)
+      const maskedUrl = databaseUrl.replace(/:([^:@]+)@/, ':****@');
+      console.log('🔗 DATABASE_URL 감지:', maskedUrl);
+
       // Cloud SQL Unix Socket 연결 형식 체크
       // postgresql://user:password@/database?host=/cloudsql/PROJECT:REGION:INSTANCE
       if (databaseUrl.includes('?host=/cloudsql/')) {
         const url = new URL(databaseUrl);
         const socketPath = url.searchParams.get('host');
 
-        console.log('🔗 Cloud SQL Unix Socket 연결:', {
+        console.log('✅ Cloud SQL Unix Socket 연결:', {
           socket: socketPath,
           database: url.pathname.slice(1),
           username: url.username,
@@ -65,10 +69,11 @@ export default registerAs<DatabaseConfig>('database', () => {
       // 일반 PostgreSQL URL: postgresql://user:password@host:port/database
       const url = new URL(databaseUrl);
 
-      console.log('🔗 PostgreSQL 일반 연결:', {
+      console.log('✅ PostgreSQL 일반 연결:', {
         host: url.hostname,
         port: url.port || 5432,
         database: url.pathname.slice(1),
+        username: url.username,
       });
 
       return {
@@ -81,8 +86,16 @@ export default registerAs<DatabaseConfig>('database', () => {
         synchronize: false,
       };
     } catch (error) {
-      console.error('❌ DATABASE_URL 파싱 실패:', error);
-      throw new Error('Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database');
+      // 에러 상세 정보 출력
+      console.error('❌ DATABASE_URL 파싱 실패:', {
+        error: error.message,
+        stack: error.stack,
+        urlLength: process.env.DATABASE_URL?.length,
+        urlStart: process.env.DATABASE_URL?.substring(0, 20),
+      });
+      throw new Error(
+        `Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database. Error: ${error.message}`,
+      );
     }
   }
 
