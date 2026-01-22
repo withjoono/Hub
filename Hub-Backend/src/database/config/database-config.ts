@@ -37,7 +37,8 @@ export default registerAs<DatabaseConfig>('database', () => {
   // DATABASE_URL이 존재하면 (운영 환경), 파싱하여 사용
   if (process.env.DATABASE_URL) {
     try {
-      const databaseUrl = process.env.DATABASE_URL;
+      // 공백/개행 제거
+      const databaseUrl = process.env.DATABASE_URL.trim();
 
       // DATABASE_URL 형식 로깅 (비밀번호 마스킹)
       const maskedUrl = databaseUrl.replace(/:([^:@]+)@/, ':****@');
@@ -47,9 +48,11 @@ export default registerAs<DatabaseConfig>('database', () => {
       // postgresql://user:password@/database?host=/cloudsql/PROJECT:REGION:INSTANCE
       if (databaseUrl.includes('?host=/cloudsql/')) {
         // 수동 파싱 (@/ 형식을 new URL()이 처리 못함)
+        // 비밀번호에 특수문자가 있을 수 있으므로 [^@]+ 사용
         const match = databaseUrl.match(/^postgresql:\/\/([^:]+):([^@]+)@\/([^?]+)\?host=(.+)$/);
 
         if (!match) {
+          console.error('❌ 정규식 매칭 실패. URL 길이:', databaseUrl.length);
           throw new Error('Cloud SQL URL 형식 불일치');
         }
 
@@ -65,9 +68,9 @@ export default registerAs<DatabaseConfig>('database', () => {
           type: 'postgres',
           host: socketPath, // Unix 소켓 경로
           port: undefined, // Unix 소켓은 포트 불필요
-          password: decodeURIComponent(password),
+          password, // decodeURIComponent 불필요 (이미 plain text)
           name: database,
-          username: decodeURIComponent(username),
+          username,
           synchronize: false,
         };
       }
