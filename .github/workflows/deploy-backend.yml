@@ -62,8 +62,8 @@ jobs:
             --max-instances 10 \
             --port 8080 \
             --add-cloudsql-instances ${{ env.CLOUD_SQL_INSTANCE }} \
-            --set-env-vars="NODE_ENV=production" \
-            --update-secrets="DATABASE_URL=database-url:latest,JWT_SECRET=jwt-secret:latest,AUTH_SECRET=auth-secret:latest,FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest"
+            --set-env-vars="NODE_ENV=production,AUTH_JWT_TOKEN_EXPIRES_IN=7200000,AUTH_REFRESH_TOKEN_EXPIRES_IN=5184000000" \
+            --update-secrets="DATABASE_URL=database-url:latest,AUTH_JWT_SECRET=jwt-secret:latest,AUTH_REFRESH_SECRET=auth-secret:latest,FIREBASE_SERVICE_ACCOUNT=firebase-service-account:latest"
 
       - name: Show service URL
         run: |
