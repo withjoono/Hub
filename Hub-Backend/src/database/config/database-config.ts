@@ -34,10 +34,35 @@ class EnvironmentVariablesValidator {
 }
 
 export default registerAs<DatabaseConfig>('database', () => {
-  // DATABASE_URL이 존재하면 (운영 환경), 개별 DB 변수 검증을 건너뜁니다.
-  if (!process.env.DATABASE_URL) {
-    validateConfig(process.env, EnvironmentVariablesValidator);
+  // DATABASE_URL이 존재하면 (운영 환경), 파싱하여 사용
+  if (process.env.DATABASE_URL) {
+    try {
+      // PostgreSQL URL 파싱: postgresql://user:password@host:port/database
+      const url = new URL(process.env.DATABASE_URL);
+
+      console.log('🔗 DATABASE_URL 파싱 성공:', {
+        host: url.hostname,
+        port: url.port,
+        database: url.pathname.slice(1),
+      });
+
+      return {
+        type: 'postgres',
+        host: url.hostname,
+        port: url.port ? parseInt(url.port, 10) : 5432,
+        password: decodeURIComponent(url.password),
+        name: url.pathname.slice(1), // Remove leading '/'
+        username: decodeURIComponent(url.username),
+        synchronize: false, // 프로덕션에서는 항상 false
+      };
+    } catch (error) {
+      console.error('❌ DATABASE_URL 파싱 실패:', error);
+      throw new Error('Invalid DATABASE_URL format. Expected: postgresql://user:password@host:port/database');
+    }
   }
+
+  // DATABASE_URL이 없으면 개별 변수 사용 (개발 환경)
+  validateConfig(process.env, EnvironmentVariablesValidator);
 
   // 실수로 동기화를 킬 경우를 대비해 config를 구성할 때 사전 차단
   // 로컬 개발 환경(development)이나 SQLite 사용 시에는 동기화 허용
