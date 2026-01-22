@@ -210,8 +210,12 @@ async function bootstrap() {
     credentials: true, // 자격 증명 허용
   });
 
-  const appPort = process.env.PORT || configService.getOrThrow('app', { infer: true }).port;
+  // Cloud Run provides PORT as string, convert to number
+  const appPort = process.env.PORT
+    ? parseInt(process.env.PORT, 10)
+    : configService.getOrThrow('app', { infer: true }).port;
   const host = process.env.NODE_ENV === 'production' ? '0.0.0.0' : '127.0.0.1';
+
   await app.listen(appPort, host);
 
   console.log(`Application is running on: http://${host}:${appPort}`);
