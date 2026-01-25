@@ -6,8 +6,8 @@
   "private": true,
   "license": "UNLICENSED",
   "scripts": {
-    "gcp-build": "nest build",
-    "build": "nest build",
+    "gcp-build": "nest build && tsc-alias",
+    "build": "nest build && tsc-alias",
     "clean": "rimraf dist tsconfig.build.tsbuildinfo tsconfig.tsbuildinfo",
     "clean:build": "npm run clean && npm run build",
     "format": "prettier --write \"src/**/*.ts\" \"test/**/*.ts\"",
@@ -129,6 +129,7 @@
     "ts-jest": "^29.1.0",
     "ts-loader": "^9.5.1",
     "ts-node": "^10.9.1",
+    "tsc-alias": "^1.8.16",
     "tsconfig-paths": "^4.2.0",
     "typescript": "^5.1.3"
   },

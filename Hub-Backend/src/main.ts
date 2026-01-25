@@ -1,3 +1,6 @@
+// tsconfig paths 등록 (런타임 경로 매핑)
+import 'tsconfig-paths/register';
+
 // Sentry 초기화 (애플리케이션 시작 전에 로드)
 import './instrumentation';
 
