@@ -10,9 +10,6 @@ import NotFoundError from "./components/errors/not-found-error";
 // Setup API interceptors
 import { setupInterceptors } from "./lib/api";
 
-// SSO Login handler
-import { processSSOLogin } from "./lib/utils/sso-helper";
-
 // Create a new router instance
 const router = createRouter({
   routeTree,
@@ -39,9 +36,6 @@ const queryClient = new QueryClient({
 
 // Setup API interceptors (인증, 토큰 갱신 등)
 setupInterceptors();
-
-// SSO 토큰 처리 (Hub에서 넘어온 경우 자동 로그인)
-processSSOLogin();
 
 // Render the app
 const rootElement = document.getElementById("root")!;

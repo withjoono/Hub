@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { meQueryKeys } from "@/stores/server/features/me/queries";
-import { generateSSOUrl, isSSOService } from "@/lib/utils/sso-helper";
+
 interface Props {
   className?: string;
 }
@@ -52,9 +52,6 @@ export function RegisterWithEmailForm({ className }: Props) {
   >("student");
   const navigate = useNavigate();
   const queryClient = useQueryClient();
-
-  // URL에서 redirect_uri 파라미터 확인 (SSO 리디렉트용)
-  const redirectUri = new URLSearchParams(window.location.search).get('redirect_uri');
 
   // Mutations
   const registerWithEmail = useRegisterWithEmail();
@@ -169,14 +166,6 @@ export function RegisterWithEmailForm({ className }: Props) {
         // 회원가입 성공 후 me 쿼리 캐시 무효화
         await queryClient.invalidateQueries({ queryKey: meQueryKeys.all });
         toast.success("거북스쿨에 가입해주셔서 감사합니다! 😄");
-
-        // SSO 리디렉트: redirect_uri가 있고 SSO 서비스이면 토큰과 함께 외부로 리디렉트
-        if (redirectUri && isSSOService(redirectUri)) {
-          const ssoUrl = generateSSOUrl(redirectUri);
-          window.location.href = ssoUrl;
-          return;
-        }
-
         navigate({ to: "/" });
       } else {
         toast.error(result.error);

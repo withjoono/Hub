@@ -188,4 +188,56 @@ export class MembersService {
       provider_type: 'local',
     });
   }
+
+  // ============================================
+  // Firebase Auth 관련 메서드
+  // ============================================
+
+  /**
+   * Firebase UID로 회원 조회
+   */
+  findOneByFirebaseUid(firebaseUid: string): Promise<MemberEntity | null> {
+    return this.membersRepository.findOneBy({
+      firebase_uid: firebaseUid,
+    });
+  }
+
+  /**
+   * 기존 회원에 Firebase UID 연결
+   */
+  async linkFirebaseUid(memberId: number, firebaseUid: string): Promise<void> {
+    await this.membersRepository.update(memberId, {
+      firebase_uid: firebaseUid,
+      update_dt: new Date(),
+    });
+  }
+
+  /**
+   * Firebase로 회원가입
+   */
+  async saveMemberByFirebase(data: {
+    firebaseUid: string;
+    email?: string;
+    name: string;
+    photoUrl?: string;
+    provider: string;
+  }): Promise<MemberEntity> {
+    const member = this.membersRepository.create({
+      email: data.email || `${data.firebaseUid}@firebase.local`,
+      nickname: data.name,
+      firebase_uid: data.firebaseUid,
+      profile_image_url: data.photoUrl || null,
+      role_type: 'ROLE_USER',
+      phone: '', // Firebase 인증에서는 phone 없이 가입 허용
+      ck_sms: false,
+      ck_sms_agree: false,
+      account_stop_yn: 'N',
+      provider_type: data.provider === 'google.com' ? 'google' : 'firebase',
+      member_type: 'student',
+      create_dt: new Date(),
+      update_dt: new Date(),
+    });
+
+    return this.membersRepository.save(member);
+  }
 }

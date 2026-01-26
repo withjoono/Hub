@@ -69,7 +69,7 @@
     "cookie-parser": "^1.4.7",
     "cors": "^2.8.5",
     "crypto-js": "^4.2.0",
-    "firebase-admin": "11.11.1",
+    "firebase-admin": "^11.11.1",
     "helmet": "^8.1.0",
     "ioredis": "^5.8.2",
     "joi": "^17.13.3",

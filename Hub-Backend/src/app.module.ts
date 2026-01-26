@@ -51,6 +51,7 @@ import { winstonConfig } from './common/utils/winston.utils';
 import { WinstonModule } from 'nest-winston';
 import { OAuthModule } from './oauth/oauth.module';
 import { SubscriptionModule } from './modules/subscription/subscription.module';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -128,6 +129,7 @@ import { SubscriptionModule } from './modules/subscription/subscription.module';
     ]),
     CommonModule, // 공통모듈(JWT, Bcrypt)
     EncryptionModule, // 민감정보 암호화 모듈
+    FirebaseModule, // Firebase Admin SDK (SSO 중앙 IDP)
     AuthModule, // 인증모듈 (SSO)
     OAuthModule, // OAuth 2.0 + OIDC 모듈
     MembersModule, // 유저모듈

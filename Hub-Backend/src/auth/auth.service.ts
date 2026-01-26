@@ -31,6 +31,7 @@ import { Logger } from 'winston';
 import { WINSTON_MODULE_PROVIDER } from 'nest-winston';
 import { SubscriptionService } from 'src/modules/subscription/subscription.service';
 import { PermissionsPayload } from './types/jwt-payload.type';
+import { FirebaseAdminService } from 'src/firebase/firebase-admin.service';
 
 // 토큰 블랙리스트 캐시 키 접두사
 const TOKEN_BLACKLIST_PREFIX = 'token_blacklist:';
@@ -48,6 +49,7 @@ export class AuthService {
     @Inject(WINSTON_MODULE_PROVIDER) private readonly logger: Logger,
     @Inject(CACHE_MANAGER) private cacheManager: Cache,
     @Optional() private readonly subscriptionService?: SubscriptionService,
+    @Optional() private readonly firebaseAdminService?: FirebaseAdminService,
   ) {}
 
   /**
@@ -502,6 +504,122 @@ export class AuthService {
       // 토큰이 유효하지 않거나 만료된 경우
       this.logger.warn(`[토큰 검증 실패] ${error.message}`);
       return { valid: false };
+    }
+  }
+
+  /**
+   * Firebase ID 토큰으로 로그인
+   * Firebase Auth에서 인증된 사용자의 ID 토큰을 검증하고 Hub JWT 토큰을 발급합니다.
+   */
+  async loginWithFirebase(idToken: string): Promise<LoginResponseType> {
+    if (!this.firebaseAdminService) {
+      throw new BadRequestException('Firebase 인증이 설정되지 않았습니다.');
+    }
+
+    try {
+      // Firebase ID 토큰 검증
+      const decodedToken = await this.firebaseAdminService.verifyIdToken(idToken);
+
+      // Firebase UID로 사용자 조회
+      let member = await this.membersService.findOneByFirebaseUid(decodedToken.uid);
+
+      if (!member) {
+        // 이메일로 사용자 조회 (기존 사용자가 Firebase로 전환하는 경우)
+        if (decodedToken.email) {
+          member = await this.membersService.findOneByEmail(decodedToken.email);
+          if (member) {
+            // 기존 사용자에 Firebase UID 연결
+            await this.membersService.linkFirebaseUid(member.id, decodedToken.uid);
+          }
+        }
+      }
+
+      if (!member) {
+        throw new NotFoundException('회원 정보를 찾을 수 없습니다. 먼저 회원가입해 주세요.');
+      }
+
+      // 앱별 권한 정보 조회
+      const permissions = await this.getMemberPermissions(member.id);
+
+      const accessToken = this.jwtService.createAccessToken(member.id, permissions);
+      const refreshToken = this.jwtService.createRefreshToken(member.id);
+      const tokenExpiry = this.jwtService.getTokenExpiryTime();
+      const activeServices = await this.membersService.findActiveServicesById(member.id);
+
+      this.logger.info(`[Firebase 로그인] memberId=${member.id}, email=${member.email}`);
+
+      return {
+        accessToken,
+        refreshToken,
+        tokenExpiry,
+        activeServices,
+      };
+    } catch (error) {
+      this.logger.error(`[Firebase 로그인 실패] ${error.message}`);
+      if (error instanceof NotFoundException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Firebase 인증에 실패했습니다.');
+    }
+  }
+
+  /**
+   * Firebase ID 토큰으로 회원가입
+   * Firebase Auth에서 인증된 사용자의 ID 토큰을 검증하고 새 회원을 생성합니다.
+   */
+  async registerWithFirebase(idToken: string): Promise<LoginResponseType> {
+    if (!this.firebaseAdminService) {
+      throw new BadRequestException('Firebase 인증이 설정되지 않았습니다.');
+    }
+
+    try {
+      // Firebase ID 토큰 검증
+      const decodedToken = await this.firebaseAdminService.verifyIdToken(idToken);
+
+      // 이미 가입된 사용자인지 확인
+      const existingByUid = await this.membersService.findOneByFirebaseUid(decodedToken.uid);
+      if (existingByUid) {
+        throw new BadRequestException('이미 가입된 Firebase 계정입니다.');
+      }
+
+      if (decodedToken.email) {
+        const existingByEmail = await this.membersService.findOneByEmail(decodedToken.email);
+        if (existingByEmail) {
+          throw new BadRequestException('이미 사용 중인 이메일입니다.');
+        }
+      }
+
+      // 새 회원 생성
+      const member = await this.membersService.saveMemberByFirebase({
+        firebaseUid: decodedToken.uid,
+        email: decodedToken.email,
+        name: decodedToken.name || decodedToken.email?.split('@')[0] || 'User',
+        photoUrl: decodedToken.picture,
+        provider: decodedToken.firebase?.sign_in_provider || 'firebase',
+      });
+
+      // 앱별 권한 정보 조회
+      const permissions = await this.getMemberPermissions(member.id);
+
+      const accessToken = this.jwtService.createAccessToken(member.id, permissions);
+      const refreshToken = this.jwtService.createRefreshToken(member.id);
+      const tokenExpiry = this.jwtService.getTokenExpiryTime();
+      const activeServices = await this.membersService.findActiveServicesById(member.id);
+
+      this.logger.info(`[Firebase 회원가입] memberId=${member.id}, email=${member.email}`);
+
+      return {
+        accessToken,
+        refreshToken,
+        tokenExpiry,
+        activeServices,
+      };
+    } catch (error) {
+      this.logger.error(`[Firebase 회원가입 실패] ${error.message}`);
+      if (error instanceof BadRequestException) {
+        throw error;
+      }
+      throw new UnauthorizedException('Firebase 인증에 실패했습니다.');
     }
   }
 }

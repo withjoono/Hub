@@ -81,6 +81,11 @@ export class MemberEntity {
   @Column({ type: 'varchar', length: 500, nullable: true })
   oauth_id: string | null;
 
+  @Expose({ groups: ['admin'] })
+  @Index('idx_member_firebase_uid')
+  @Column({ type: 'varchar', length: 128, nullable: true })
+  firebase_uid: string | null;
+
   @Column({ type: 'bigint', nullable: true })
   s_type_id: number | null;
 

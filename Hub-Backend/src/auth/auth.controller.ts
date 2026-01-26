@@ -36,6 +36,7 @@ import { CurrentMemberId } from './decorators/current-member_id.decorator';
 import { MemberEntity } from 'src/database/entities/member/member.entity';
 import { CookieService } from './services/cookie.service';
 import { VerifyTokenDto } from './dtos/verify-token.dto';
+import { FirebaseLoginDto, FirebaseRegisterDto } from './dtos/firebase-auth.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -554,5 +555,99 @@ export class AuthController {
     @Body() dto: VerifyTokenDto,
   ): Promise<{ valid: boolean; memberId?: number; email?: string; name?: string }> {
     return this.service.verifyToken(dto.accessToken);
+  }
+
+  @ApiOperation({
+    summary: 'Firebase 로그인',
+    description:
+      'Firebase ID 토큰을 사용하여 로그인합니다. Firebase Auth에서 인증된 사용자의 토큰을 검증하고 Hub JWT 토큰을 발급합니다.',
+  })
+  @ApiResponse({
+    status: 200,
+    description: 'Firebase 로그인 성공',
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...',
+        tokenExpiry: 7200,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Firebase 인증 실패',
+  })
+  @ApiResponse({
+    status: 404,
+    description: '회원 정보를 찾을 수 없음 (회원가입 필요)',
+  })
+  @SerializeOptions({
+    groups: ['me'],
+  })
+  @Public()
+  @Post('firebase/login')
+  public async loginWithFirebase(
+    @Body() dto: FirebaseLoginDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseType> {
+    const result = await this.service.loginWithFirebase(dto.idToken);
+
+    // HttpOnly 쿠키로 토큰 설정 (XSS 공격 방지)
+    this.cookieService.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+      result.tokenExpiry * 1000,
+      60 * 24 * 60 * 60 * 1000,
+    );
+
+    return result;
+  }
+
+  @ApiOperation({
+    summary: 'Firebase 회원가입',
+    description:
+      'Firebase ID 토큰을 사용하여 새 계정을 생성합니다. Firebase Auth에서 인증된 사용자의 토큰을 검증하고 새 회원을 등록합니다.',
+  })
+  @ApiResponse({
+    status: 201,
+    description: 'Firebase 회원가입 성공',
+    schema: {
+      example: {
+        accessToken: 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...',
+        refreshToken: 'eyJhbGciOiJIUzUxMiIsInR5cCI6IkpXVCJ9...',
+        tokenExpiry: 7200,
+      },
+    },
+  })
+  @ApiResponse({
+    status: 400,
+    description: '이미 가입된 Firebase 계정 또는 이메일',
+  })
+  @ApiResponse({
+    status: 401,
+    description: 'Firebase 인증 실패',
+  })
+  @SerializeOptions({
+    groups: ['me'],
+  })
+  @Public()
+  @Post('firebase/register')
+  public async registerWithFirebase(
+    @Body() dto: FirebaseRegisterDto,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<LoginResponseType> {
+    const result = await this.service.registerWithFirebase(dto.idToken);
+
+    // HttpOnly 쿠키로 토큰 설정 (XSS 공격 방지)
+    this.cookieService.setAuthCookies(
+      res,
+      result.accessToken,
+      result.refreshToken,
+      result.tokenExpiry * 1000,
+      60 * 24 * 60 * 60 * 1000,
+    );
+
+    return result;
   }
 }
