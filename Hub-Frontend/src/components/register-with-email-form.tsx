@@ -191,8 +191,8 @@ export function RegisterWithEmailForm({ className }: Props) {
     } catch (error: any) {
       console.error("회원가입 에러:", error);
 
-      // Firebase 에러 처리
-      if (error.code) {
+      // Firebase 에러 처리 (error.code가 'auth/'로 시작)
+      if (error.code && error.code.startsWith('auth/')) {
         if (error.code === "auth/email-already-in-use") {
           form.setError("email", {
             type: "manual",
@@ -212,7 +212,7 @@ export function RegisterWithEmailForm({ className }: Props) {
           toast.error("회원가입 중 오류가 발생했습니다.");
         }
       }
-      // 백엔드 에러 처리
+      // 백엔드 에러 처리 (axios 에러)
       else {
         const errorMessage = error.response?.data?.message || "회원가입 중 오류가 발생했습니다.";
 

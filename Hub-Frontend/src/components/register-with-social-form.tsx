@@ -205,16 +205,26 @@ export function RegisterWithSocialForm({ className }: Props) {
       return;
     }
 
-    const formattedPhone = phone.replace(/-/g, "");
-    const result = await sendRegisterCode.mutateAsync({
-      phone: formattedPhone,
-    });
-    if (result.success) {
-      toast.success("인증번호가 발송되었습니다.");
-      return;
-    } else {
-      toast.error(result.error);
-      return;
+    try {
+      const formattedPhone = phone.replace(/-/g, "");
+      const result = await sendRegisterCode.mutateAsync({
+        phone: formattedPhone,
+      });
+      if (result.success) {
+        toast.success("인증번호가 발송되었습니다.");
+        return;
+      } else {
+        toast.error(result.error);
+        return;
+      }
+    } catch (error: any) {
+      // 백엔드 에러 메시지를 전화번호 필드에 표시
+      const errorMessage = error.response?.data?.message || "인증코드 발송 중 오류가 발생했습니다.";
+
+      form.setError("phone", {
+        type: "manual",
+        message: errorMessage,
+      });
     }
   };
 
