@@ -1,5 +1,7 @@
-// tsconfig paths 등록 (런타임 경로 매핑)
-import 'tsconfig-paths/register';
+// tsconfig paths 등록 (런타임 경로 매핑) - 개발 환경에서만 필요
+if (process.env.NODE_ENV !== 'production') {
+  require('tsconfig-paths/register');
+}
 
 // Sentry 초기화 (애플리케이션 시작 전에 로드)
 import './instrumentation';
