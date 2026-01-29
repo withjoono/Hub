@@ -37,6 +37,10 @@ jobs:
         run: npm run build
         env:
           NODE_ENV: production
+          # API URL은 명시적으로 설정
+          VITE_API_URL_HUB: https://geobukschool-backend-siowqsnsha-du.a.run.app
+          VITE_API_URL_SUSI: https://geobukschool-backend-siowqsnsha-du.a.run.app
+          VITE_API_URL_NEST: https://geobukschool-backend-siowqsnsha-du.a.run.app
           # Firebase 설정은 .env.production 파일 사용 (ts-back-nest-479305)
 
       - name: Deploy to Firebase Hosting (hub.turtleschool.com)
