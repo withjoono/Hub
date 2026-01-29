@@ -8,7 +8,7 @@ import ScrollToTop from "@/components/scroll-to-top";
 import { Toaster } from "@/components/ui/sonner";
 import { createRootRoute, Outlet, useLocation } from "@tanstack/react-router";
 // SSO 초기화
-import { useSSOInit } from "@shared/sso-client/index";
+import { useSSOInit } from "@shared/sso-client/index.ts";
 import { setTokens as setTokensToManager } from "@/lib/api/token-manager";
 import { useTokenStore } from "@/stores/atoms/tokens";
 import { useAuthStore } from "@/stores/client/use-auth-store";
