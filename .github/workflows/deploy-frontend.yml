@@ -58,6 +58,6 @@ jobs:
       - name: Deployment complete
         run: |
           echo "🎉 Frontend deployed successfully!"
-          echo "📍 Hub: https://hub.turtleschool.com"
-          echo "📍 Jungsi: https://jungsi.turtleschool.com"
-          echo "📍 Susi: https://susi.turtleschool.com"
+          echo "📍 메인: https://www.geobukschool.kr"
+          echo "📍 수시: https://www.geobukschool.kr/susi"
+          echo "📍 정시: https://www.geobukschool.kr/jungsi"
