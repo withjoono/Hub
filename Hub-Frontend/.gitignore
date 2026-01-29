@@ -43,7 +43,6 @@ nul
 .mcp.json
 .playwright-mcp/
 Uploads/
-fe-shared-packages/
 mentoring/
 planner/
 docs/
